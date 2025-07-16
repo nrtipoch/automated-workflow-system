@@ -1,4 +1,21 @@
 // server.js
+cat > server.js << 'EOF'
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+app.use(express.static('public'));
+
+// สร้าง public directory ถ้าไม่มี
+if (!fs.existsSync('public')) {
+  fs.mkdirSync('public', { recursive: true });
+  console.log('✅ Created public directory');
+}
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
