@@ -1,0 +1,388 @@
+// public/index.html
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Workflow System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            max-width: 1200px;
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        .workflow-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin: 1rem 0;
+            transition: transform 0.3s ease;
+        }
+        .workflow-card:hover {
+            transform: translateY(-5px);
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 100%;
+            height: 2px;
+            background: #ddd;
+            z-index: 1;
+        }
+        .step:last-child::after {
+            display: none;
+        }
+        .step-icon {
+            width: 50px;
+            height: 50px;
+            background: #4facfe;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            color: white;
+            font-size: 1.2rem;
+            position: relative;
+            z-index: 2;
+        }
+        .step.completed .step-icon {
+            background: #28a745;
+        }
+        .step.active .step-icon {
+            background: #ffc107;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            background: #e9ecef;
+            margin: 1rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            transition: width 0.5s ease;
+        }
+        .result-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <div class="header">
+                <h1><i class="fas fa-robot"></i> Automated Workflow System</h1>
+                <p class="mb-0">ระบบสร้างเนื้อหาอัตโนมัติด้วย AI</p>
+            </div>
+
+            <div class="p-4">
+                <!-- Input Form -->
+                <div class="workflow-card p-4 mb-4">
+                    <h3><i class="fas fa-edit"></i> สร้างเนื้อหาใหม่</h3>
+                    <form id="workflowForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">หัวข้อเรื่อง</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="content" class="form-label">เนื้อหาที่ต้องการสรุป</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="customEnding" class="form-label">ประโยคลงท้าย (ไม่บังคับ)</label>
+                            <input type="text" class="form-control" id="customEnding" name="customEnding">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">อัปโหลดโลโก้</label>
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-play"></i> เริ่มประมวลผล
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Progress Section -->
+                <div id="progressSection" class="workflow-card p-4 mb-4" style="display: none;">
+                    <h3><i class="fas fa-cogs"></i> กำลังประมวลผล...</h3>
+                    
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="step-indicator">
+                        <div class="step" id="step1">
+                            <div class="step-icon"><i class="fas fa-brain"></i></div>
+                            <small>สรุปเนื้อหา</small>
+                        </div>
+                        <div class="step" id="step2">
+                            <div class="step-icon"><i class="fas fa-volume-up"></i></div>
+                            <small>แปลงเป็นเสียง</small>
+                        </div>
+                        <div class="step" id="step3">
+                            <div class="step-icon"><i class="fas fa-video"></i></div>
+                            <small>สร้างวิดีโอ</small>
+                        </div>
+                        <div class="step" id="step4">
+                            <div class="step-icon"><i class="fab fa-youtube"></i></div>
+                            <small>อัปโหลด YouTube</small>
+                        </div>
+                    </div>
+                    
+                    <div id="statusMessage" class="text-center mt-3">
+                        <div class="loading-spinner"></div>
+                        <span class="ms-2">กำลังเริ่มต้น...</span>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="workflow-card p-4" style="display: none;">
+                    <h3><i class="fas fa-check-circle text-success"></i> ผลลัพธ์</h3>
+                    <div id="resultsContent"></div>
+                </div>
+
+                <!-- History Section -->
+                <div class="workflow-card p-4">
+                    <h3><i class="fas fa-history"></i> ประวัติการทำงาน</h3>
+                    <div id="historyContent">
+                        <p class="text-muted">ยังไม่มีประวัติการทำงาน</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('workflowForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Show progress section
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            // Reset progress
+            updateProgress(0);
+            resetSteps();
+            
+            try {
+                const response = await fetch('/api/process-workflow', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Simulate progress updates
+                    await simulateProgress(result.data);
+                    showResults(result.data);
+                } else {
+                    showError(result.error);
+                }
+                
+            } catch (error) {
+                showError('เกิดข้อผิดพลาดในการประมวลผล: ' + error.message);
+            }
+        });
+
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        function resetSteps() {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById('step' + i);
+                step.classList.remove('completed', 'active');
+            }
+        }
+
+        function setStepActive(stepNumber) {
+            const step = document.getElementById('step' + stepNumber);
+            step.classList.add('active');
+        }
+
+        function setStepCompleted(stepNumber) {
+            const step = document.getElementById('step' + stepNumber);
+            step.classList.remove('active');
+            step.classList.add('completed');
+        }
+
+        function updateStatusMessage(message) {
+            document.getElementById('statusMessage').innerHTML = 
+                '<div class="loading-spinner"></div><span class="ms-2">' + message + '</span>';
+        }
+
+        async function simulateProgress(data) {
+            const steps = [
+                { step: 1, message: 'กำลังสรุปเนื้อหาด้วย AI Gemini...', progress: 25 },
+                { step: 2, message: 'กำลังแปลงข้อความเป็นเสียง...', progress: 50 },
+                { step: 3, message: 'กำลังสร้างวิดีโอด้วย Canva...', progress: 75 },
+                { step: 4, message: 'กำลังอัปโหลดไปยัง YouTube...', progress: 100 }
+            ];
+
+            for (const { step, message, progress } of steps) {
+                setStepActive(step);
+                updateStatusMessage(message);
+                updateProgress(progress);
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                setStepCompleted(step);
+            }
+        }
+
+        function showResults(data) {
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="result-card">
+                    <h5><i class="fas fa-file-alt"></i> เนื้อหาที่สรุปได้</h5>
+                    <p>${data.steps.summary?.data?.text || 'ไม่พบข้อมูล'}</p>
+                    <small class="text-muted">จำนวนคำ: ${data.steps.summary?.data?.wordCount || 0} คำ</small>
+                </div>
+                
+                <div class="result-card">
+                    <h5><i class="fas fa-volume-up"></i> ไฟล์เสียง</h5>
+                    <p>ระยะเวลา: ${data.steps.audio?.data?.duration || 'ไม่ทราบ'}</p>
+                    <audio controls class="w-100">
+                        <source src="${data.steps.audio?.data?.audioPath || ''}" type="audio/mpeg">
+                        เบราว์เซอร์ของคุณไม่รองรับการเล่นไฟล์เสียง
+                    </audio>
+                </div>
+                
+                <div class="result-card">
+                    <h5><i class="fas fa-video"></i> วิดีโอ</h5>
+                    <p>สร้างเสร็จเรียบร้อย</p>
+                    <video controls class="w-100" style="max-height: 400px;">
+                        <source src="${data.steps.video?.data?.videoPath || ''}" type="video/mp4">
+                        เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
+                    </video>
+                </div>
+                
+                <div class="result-card">
+                    <h5><i class="fab fa-youtube"></i> YouTube</h5>
+                    <p>อัปโหลดเสร็จเรียบร้อย</p>
+                    <a href="${data.steps.youtube?.data?.url || '#'}" target="_blank" class="btn btn-danger">
+                        <i class="fab fa-youtube"></i> ดูใน YouTube
+                    </a>
+                </div>
+                
+                <div class="result-card">
+                    <h5><i class="fas fa-info-circle"></i> ข้อมูลเพิ่มเติม</h5>
+                    <p><strong>Workflow ID:</strong> ${data.id}</p>
+                    <p><strong>สร้างเมื่อ:</strong> ${new Date(data.timestamp).toLocaleString('th-TH')}</p>
+                    <p><strong>สถานะ:</strong> <span class="badge bg-success">${data.status}</span></p>
+                </div>
+            `;
+            
+            // Update history
+            loadHistory();
+        }
+
+        function showError(error) {
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle"></i> เกิดข้อผิดพลาด</h5>
+                    <p>${error}</p>
+                </div>
+            `;
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/workflows');
+                const result = await response.json();
+                
+                if (result.success && result.data.length > 0) {
+                    const historyContent = document.getElementById('historyContent');
+                    historyContent.innerHTML = result.data.map(workflow => `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-title">${workflow.title || 'ไม่มีชื่อ'}</h6>
+                                <p class="card-text small text-muted">
+                                    ${new Date(workflow.timestamp).toLocaleString('th-TH')}
+                                </p>
+                                <span class="badge ${workflow.status === 'completed' ? 'bg-success' : 'bg-danger'}">
+                                    ${workflow.status}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        // Load history on page load
+        document.addEventListener('DOMContentLoaded', loadHistory);
+    </script>
+</body>
+</html>
